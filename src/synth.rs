@@ -7,6 +7,7 @@ use std::time::Duration;
 use rodio::{Decoder, OutputStream, Sample, source::Source};
 use rodio::cpal::FromSample;
 use rodio::source::{Amplify, BltFilter, Buffered, Crossfade, Delay, FadeIn, Mix, Pausable, PeriodicAccess, Repeat, SamplesConverter, SkipDuration, Skippable, Speed, Stoppable, TakeDuration};
+use crate::waves::{sin_wave, wave_table_from_func};
 
 use super::bridge::{Message, Synth};
 
@@ -25,7 +26,7 @@ pub struct WaveTableSynth {
 }
 
 impl WaveTableSynth {
-    fn new(sample_rate: u32, wave_table: Vec<f32>, envelope: Envelope) -> WaveTableSynth {
+    pub(crate) fn new(sample_rate: u32, wave_table: Vec<f32>, envelope: Envelope) -> WaveTableSynth {
         return WaveTableSynth {
             sample_rate,
             wave_table,
@@ -84,17 +85,16 @@ impl Synth for WaveTableSynth {
     }
 
     fn evaluate_message(&mut self, message: Message) -> Option<Message> {
-        let (absolute_volume, is_active) = self.envelope.evaluate(message);
+        let (volume, is_active) = self.envelope.evaluate(message);
         if !is_active {
             return None;
         }
 
         let freq = 440.0 * 2.0f32.powf((message.key as f32 - 69.0) / 12.0);
-        let wave_value = self.lerp(freq, message.time_since_pressed + message.time_since_released);
 
-        let volume = wave_value * absolute_volume * (message.velocity as f32 / 127.0);
+        let value = self.lerp(freq, message.time_since_pressed + message.time_since_released);
 
-        self.current_value += volume;
+        self.current_value += value * volume;
         return Some(self.next_message(message, volume));
     }
 
@@ -103,7 +103,7 @@ impl Synth for WaveTableSynth {
     }
 }
 
-struct Envelope {
+pub struct Envelope {
     attack: f32,
     decay: f32,
     sustain: f32,
@@ -111,7 +111,7 @@ struct Envelope {
 }
 
 impl Envelope {
-    fn new(attack: f32, decay: f32, sustain: f32, release: f32) -> Envelope {
+    pub(crate) fn new(attack: f32, decay: f32, sustain: f32, release: f32) -> Envelope {
         return Envelope {
             attack,
             decay,
@@ -123,10 +123,12 @@ impl Envelope {
     fn evaluate(&mut self, message: Message) -> (f32, bool) {
         let time = message.time_since_pressed;
         let release_time = message.time_since_released;
+        let velocity = message.velocity as f32 / 127.0;
 
         let mut value = 0.0;
         if time < self.attack {
-            value = message.start_volume + (1.0 - message.start_volume) * time / self.attack;
+            let start_volume = message.start_volume / velocity;
+            value = start_volume + (1.0 - start_volume) * time / self.attack;
         } else if time < self.attack + self.decay {
             value = 1.0 - (time - self.attack) / self.decay * (1.0 - self.sustain);
         } else {
@@ -140,23 +142,13 @@ impl Envelope {
             value *= 1.0 - (release_time / self.release);
         }
 
-        return (value, true);
+        return (value * velocity, true);
     }
 }
 
 
 pub fn get_example_wave_table_synth() -> WaveTableSynth {
-    let wave_table_size = 64;
-    let mut wave_table: Vec<f32> = Vec::with_capacity(wave_table_size);
-
-    for n in 0..wave_table_size {
-        let pos = n as f32 / wave_table_size as f32;
-
-        // wave_table.push((2.0 * std::f32::consts::PI * pos).sin()); // sine wave
-        // wave_table.push((2.0 * std::f32::consts::PI * pos).sin().signum()); // square wave
-        // wave_table.push(2.0 * (pos - (pos + 0.5).floor()).abs()); // triangle wave
-        wave_table.push(2.0 * (pos - (pos + 0.5).floor())); // sawtooth wave
-    }
+    let wave_table = wave_table_from_func(Box::new(sin_wave), 64);
 
     let sample_rate = 44100;
 

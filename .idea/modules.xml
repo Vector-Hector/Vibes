@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/AudioEffectProcessor.iml" filepath="$PROJECT_DIR$/AudioEffectProcessor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Vibes.iml" filepath="$PROJECT_DIR$/Vibes.iml" />
     </modules>
   </component>
 </project>

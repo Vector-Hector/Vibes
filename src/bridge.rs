@@ -48,11 +48,11 @@ impl MidiSynthBridge {
             time_since_released: 0.0,
         });
 
-        message.velocity = velocity;
         message.is_released = !pressed;
         if pressed {
             message.start_volume = message.last_volume; // ensure smooth transition from last note
             message.time_since_pressed = 0.0;
+            message.velocity = velocity;
         } else {
             message.time_since_released = 0.0;
         }
