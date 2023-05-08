@@ -55,6 +55,7 @@ impl MidiSynthBridge {
             message.velocity = velocity;
         } else {
             message.time_since_released = 0.0;
+            message.start_volume = message.last_volume; // ensure smooth transition when releasing quickly
         }
     }
 

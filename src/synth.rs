@@ -139,7 +139,8 @@ impl Envelope {
             if release_time >= self.release {
                 return (0.0, false); // release is over
             }
-            value *= 1.0 - (release_time / self.release);
+            let start_volume = message.start_volume / velocity;
+            value *= (1.0 - (release_time / self.release)) * start_volume;
         }
 
         return (value * velocity, true);
