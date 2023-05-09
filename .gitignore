@@ -1,1 +1,5 @@
-/target
+/dist/
+/target/
+/static/worker/
+/audio_worker/target/
+/static/bundled_worker.js
