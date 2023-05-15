@@ -3,7 +3,12 @@ use std::process::Command;
 fn main() {
     // This tells Cargo to re-run the build script if the worker code changes.
     println!("cargo:rerun-if-changed=audio_worker/src/");
-    println!("cargo:rerun-if-changed=static/worker.js");
+    println!("cargo:rerun-if-changed=static/rust_audio_processor.js");
+    println!("cargo:rerun-if-changed=static/text_decoder.js");
+    println!("cargo:rerun-if-changed=audio_worker/Cargo.toml");
+    println!("cargo:rerun-if-changed=build.rs");
+
+    println!("cargo:warning=Building worker code");
 
     // Build the worker's Rust code as WebAssembly
     let status = Command::new("cargo")
@@ -43,8 +48,8 @@ fn main() {
     let status = Command::new("esbuild.cmd")
         .args(&[
             "--bundle",
-            "static/worker.js",
-            "--outfile=static/bundled_worker.js",
+            "static/rust_audio_processor.js",
+            "--outfile=static/worker/bundled_rust_audio_processor.js",
             "--format=iife",
         ])
         .status()

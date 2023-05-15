@@ -1,5 +1,6 @@
 mod app;
-mod processor_bridge;
+mod log;
+mod audio;
 
 use app::App;
 

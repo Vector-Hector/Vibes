@@ -1,95 +1,65 @@
 use std::borrow::Borrow;
+use std::sync::{Arc, Mutex};
 use gloo::console::console;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 use web_sys::{AudioContext, GainNode, OscillatorNode, OscillatorType, Worker, console, MessageEvent};
 use yew::prelude::*;
 use serde::{Serialize, Deserialize};
+use futures_util::{FutureExt, TryFutureExt};
+use yew::platform::spawn_local;
 
-use crate::processor_bridge;
-use crate::processor_bridge::send_samples;
+use crate::audio::manager::Manager;
 
-#[derive(Serialize, Deserialize)]
-pub struct CalculateSamplesMessage {
-    pub length: usize,
-
-    #[serde(rename = "type")]
-    pub typ: String,
-}
-
-impl CalculateSamplesMessage {
-    pub fn new(length: usize) -> CalculateSamplesMessage {
-        return CalculateSamplesMessage {
-            length,
-            typ: "calculateSamples".to_string(),
-        };
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct SamplesMessage {
-    pub samples: Vec<f32>,
-
-    pub buffer: u32,
-
-    #[serde(rename = "type")]
-    pub typ: String,
-
-}
-
-impl SamplesMessage {
-    pub fn new(samples: Vec<f32>) -> SamplesMessage {
-        return SamplesMessage {
-            samples,
-            buffer: 0,
-            typ: "samples".to_string(),
-        };
-    }
-}
-
-fn init() -> Worker {
-    processor_bridge::initialize();
-
-    let wrk = Worker::new("/static/bundled_worker.js").unwrap();
-
-    let worker_callback = Closure::wrap(Box::new(move |event: MessageEvent| {
-        let msg: SamplesMessage = serde_wasm_bindgen::from_value(event.data()).unwrap();
-
-        send_samples(msg.samples.as_slice(), msg.buffer)
-    }) as Box<dyn FnMut(MessageEvent)>);
-
-    wrk.add_event_listener_with_callback("message", worker_callback.as_ref().unchecked_ref()).unwrap();
-
-    processor_bridge::set_worker(&wrk);
-
-    worker_callback.forget();
-
-    return wrk;
-}
-
-fn play(worker: &Worker) -> Result<(), JsValue> {
-    let csm = CalculateSamplesMessage::new(2048);
-
-    worker.post_message(&serde_wasm_bindgen::to_value(csm.borrow())?);
-    worker.post_message(&serde_wasm_bindgen::to_value(csm.borrow())?);
-
-    processor_bridge::play();
-
-    Ok(())
+struct State {
+    str: String,
 }
 
 #[function_component(App)]
 pub fn app() -> Html {
-    let worker = use_state(init);
+    let state = use_state(|| None as Option<Manager>);
+
+    {
+        let state_handle = state.clone();
+        use_effect(move || {
+            if state_handle.borrow().is_some() {
+                return;
+            }
+
+            console::log_1(&JsValue::from_str("Initializing..."));
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let mgr = Manager::new().await;
+                if mgr.is_err() {
+                    console::error_1(&mgr.err().unwrap());
+                    return;
+                }
+                console::log_1(&JsValue::from_str("Setting state..."));
+                state_handle.set(Some(mgr.unwrap()));
+            });
+        });
+    }
+
+    let onclick = {
+        let state_handle = state.clone();
+
+        Callback::from(move |_| {
+            let state_handle = state_handle.clone();
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let mgr = state_handle.borrow().as_ref().unwrap();
+                let result = mgr.play().await;
+                if result.is_err() {
+                    console::error_1(&result.err().unwrap());
+                }
+            });
+        })
+    };
 
     return html! {
         <main>
-            <img class="logo" src="https://yew.rs/img/logo.png" alt="Yew logo" />
-            <h1>{ "lel" }</h1>
-            <span class="subtitle">{ "from Yew with " }<i class="heart" /></span>
-        <button onclick={move |_| {
-            play(&*worker);
-        }}>{ "Play" }</button>
+        <button onclick={onclick}>{ "Play" }</button>
         </main>
+
     }
 }

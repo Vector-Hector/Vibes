@@ -1,37 +1,38 @@
+import  * as td from "./text_decoder.js";
+import * as worker from "./worker/audio_worker.js"
+
+const _ = td;
+
 class MasterProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
-        this.buffers = [null, null];
-        this.currentBuffer = 0;
-        this.sampleIndex = 0;
         this.port.onmessage = this.handleMessage.bind(this);
     }
 
-    handleMessage(event) {
-        if (event.data.type === 'samples') {
-            this.buffers[event.data.buffer] = event.data.samples;
+    async handleMessage(event) {
+        switch (event.data.type) {
+            case "midi":
+                console.log("processor got midi message", event.data)
+                const msg = event.data;
+                worker.on_midi(msg.is_active, msg.note, msg.velocity);
+                break;
+            case "wasmModule":
+                const module = event.data.value;
+                worker.initSync(module);
+                console.log("initialized wasm module")
+                break;
         }
     }
 
     process(inputs, outputs) {
         const output = outputs[0];
-        const currentSamples = this.buffers[this.currentBuffer];
-
-        if (!currentSamples) return true;
+        const currentSamples = worker.calculate_samples(output[0].length);
 
         for (let channel = 0; channel < output.length; ++channel) {
             const outputChannel = output[channel];
 
             for (let i = 0; i < outputChannel.length; ++i) {
-                outputChannel[i] = currentSamples[this.sampleIndex];
-
-                this.sampleIndex++;
-                if (this.sampleIndex >= currentSamples.length) {
-                    // Request the next buffer from the worker
-                    this.port.postMessage({ type: 'calculateSamples', length: currentSamples.length });
-                    this.sampleIndex = 0;
-                    this.currentBuffer = (this.currentBuffer + 1) % 2;
-                }
+                outputChannel[i] = currentSamples[i];
             }
         }
 
@@ -40,3 +41,4 @@ class MasterProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('master-processor', MasterProcessor);
+

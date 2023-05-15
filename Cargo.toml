@@ -25,6 +25,11 @@ features = [
     "AudioWorkletNodeOptions",
     "console",
     "MessageEvent",
+    "MessagePort",
+    "Headers",
+    "ReadableStream",
+    "Request",
+    "TextDecoder",
 ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -32,7 +37,7 @@ gloo = "0.8.0"
 log = "0.4.17"
 midir = "0.9.1"
 rodio = "0.17.1"
-wasm-bindgen = "0.2.84"
+wasm-bindgen = { version="0.2.84", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.34"
 wasm-logger = "0.2.0"
 yew = { version="0.20", features=["csr"] }
@@ -42,3 +47,6 @@ js-sys = "0.3.61"
 serde = "1.0.162"
 serde_derive = "1.0.162"
 serde-wasm-bindgen = "0.5.0"
+
+console_error_panic_hook = "0.1.6"
+futures-util = "0.3.28"
