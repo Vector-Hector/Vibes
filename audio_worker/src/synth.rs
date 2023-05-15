@@ -4,12 +4,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::time::Duration;
 
-use rodio::{Decoder, OutputStream, Sample, source::Source};
-use rodio::cpal::FromSample;
-use rodio::source::{Amplify, BltFilter, Buffered, Crossfade, Delay, FadeIn, Mix, Pausable, PeriodicAccess, Repeat, SamplesConverter, SkipDuration, Skippable, Speed, Stoppable, TakeDuration};
 use crate::waves::{sin_wave, wave_table_from_func};
 
-use super::bridge::{Message, Synth};
+use super::bridge::{KeyState, Synth};
 
 pub struct WaveTableSynth {
     /// the sample rate in hz
@@ -52,7 +49,7 @@ impl WaveTableSynth {
     }
 
     /// Updates the time since pressed and time since released fields of the message.
-    fn next_message(&mut self, message: Message, volume: f32) -> Message {
+    fn next_message(&mut self, message: KeyState, volume: f32) -> KeyState {
         let mut tsp = message.time_since_pressed;
         let mut tsr = message.time_since_released;
         let dt = 1.0 / self.sample_rate as f32;
@@ -63,7 +60,7 @@ impl WaveTableSynth {
             tsr += dt;
         }
 
-        return Message {
+        return KeyState {
             key: message.key,
             velocity: message.velocity,
             is_released: message.is_released,
@@ -84,7 +81,7 @@ impl Synth for WaveTableSynth {
         self.current_value = 0.0;
     }
 
-    fn evaluate_message(&mut self, message: Message) -> Option<Message> {
+    fn evaluate_message(&mut self, message: KeyState) -> Option<KeyState> {
         let (volume, is_active) = self.envelope.evaluate(message);
         if !is_active {
             return None;
@@ -120,7 +117,7 @@ impl Envelope {
         };
     }
 
-    fn evaluate(&mut self, message: Message) -> (f32, bool) {
+    fn evaluate(&mut self, message: KeyState) -> (f32, bool) {
         let time = message.time_since_pressed;
         let release_time = message.time_since_released;
         let velocity = message.velocity as f32 / 127.0;

@@ -1,0 +1,3 @@
+[watch]
+watch = ["src", "static", "audio_worker/src", "audio_worker/Cargo.toml", "build.rs", "Cargo.toml", "Trunk.toml", "index.html", "index.scss"]
+ignore = ["static/worker/" ]

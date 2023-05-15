@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::time::Duration;
-use rodio::Source;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy)]
-pub(crate) struct Message {
+pub struct KeyState {
     pub(crate) key: u8,
     pub(crate) velocity: u8,
     pub(crate) last_volume: f32,
@@ -14,15 +13,16 @@ pub(crate) struct Message {
     pub(crate) time_since_released: f32,
 }
 
-pub(crate) struct MidiSynthBridge {
+
+pub struct MidiSynthBridge {
     sample_rate: u32,
-    messages: HashMap<u8, Message>,
+    messages: HashMap<u8, KeyState>,
     synth: Box<dyn Synth>,
     volume: f32,
 }
 
 impl MidiSynthBridge {
-    pub(crate) fn new(synth: Box<dyn Synth>) -> MidiSynthBridge {
+    pub fn new(synth: Box<dyn Synth>) -> MidiSynthBridge {
         let sr = synth.sample_rate();
 
         return MidiSynthBridge {
@@ -37,8 +37,8 @@ impl MidiSynthBridge {
         self.volume = volume;
     }
 
-    fn on_midi(&mut self, pressed: bool, key: u8, velocity: u8) {
-        let message = self.messages.entry(key).or_insert(Message {
+    pub fn on_midi(&mut self, pressed: bool, key: u8, velocity: u8) {
+        let message = self.messages.entry(key).or_insert(KeyState {
             key,
             velocity,
             last_volume: 0.0,
@@ -59,7 +59,7 @@ impl MidiSynthBridge {
         }
     }
 
-    fn get_sample(&mut self) -> f32 {
+    pub fn get_sample(&mut self) -> f32 {
         self.synth.reset();
 
         let mut to_remove = Vec::new();
@@ -81,19 +81,19 @@ impl MidiSynthBridge {
     }
 }
 
-pub(crate) trait Synth {
+pub trait Synth {
     fn sample_rate(&self) -> u32;
     fn reset(&mut self);
-    fn evaluate_message(&mut self, message: Message) -> Option<Message>;
+    fn evaluate_message(&mut self, message: KeyState) -> Option<KeyState>;
     fn get_sample(&mut self) -> f32;
 }
 
-pub(crate) struct BridgeSourceWrapper {
+pub struct BridgeSourceWrapper {
     bridge: Arc<Mutex<MidiSynthBridge>>,
 }
 
 impl BridgeSourceWrapper {
-    pub(crate) fn new(bridge: Arc<Mutex<MidiSynthBridge>>) -> BridgeSourceWrapper {
+    pub fn new(bridge: Arc<Mutex<MidiSynthBridge>>) -> BridgeSourceWrapper {
         return BridgeSourceWrapper { bridge };
     }
 
@@ -113,25 +113,6 @@ impl Iterator for BridgeSourceWrapper {
     fn next(&mut self) -> Option<Self::Item> {
         let mut bridge = self.get_bridge();
         return Some(bridge.get_sample());
-    }
-}
-
- impl Source for BridgeSourceWrapper {
-    fn current_frame_len(&self) -> Option<usize> {
-        return None;
-    }
-
-    fn channels(&self) -> u16 {
-        return 1;
-    }
-
-    fn sample_rate(&self) -> u32 {
-        let mut bridge = self.get_bridge();
-        return bridge.sample_rate;
-    }
-
-    fn total_duration(&self) -> Option<Duration> {
-        return None;
     }
 }
 
