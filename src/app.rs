@@ -1,19 +1,11 @@
 use std::borrow::Borrow;
-use std::sync::{Arc, Mutex};
-use gloo::console::console;
+
 use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::*;
-use web_sys::{AudioContext, GainNode, OscillatorNode, OscillatorType, Worker, console, MessageEvent};
+use web_sys::{console};
 use yew::prelude::*;
-use serde::{Serialize, Deserialize};
-use futures_util::{FutureExt, TryFutureExt};
-use yew::platform::spawn_local;
 
 use crate::audio::manager::Manager;
-
-struct State {
-    str: String,
-}
+use crate::log;
 
 #[function_component(App)]
 pub fn app() -> Html {
@@ -26,7 +18,7 @@ pub fn app() -> Html {
                 return;
             }
 
-            console::log_1(&JsValue::from_str("Initializing..."));
+            log!("Initializing...");
 
             wasm_bindgen_futures::spawn_local(async move {
                 let mgr = Manager::new().await;
@@ -34,7 +26,7 @@ pub fn app() -> Html {
                     console::error_1(&mgr.err().unwrap());
                     return;
                 }
-                console::log_1(&JsValue::from_str("Setting state..."));
+                log!("Setting state...");
                 state_handle.set(Some(mgr.unwrap()));
             });
         });

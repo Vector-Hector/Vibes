@@ -1,8 +1,6 @@
-use wasm_bindgen::JsCast;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Worker, AudioContext, AudioNode, AudioWorkletNode, console, GainNode, MessageEvent, MessagePort, Request, Response, TextDecoder, Window};
+use web_sys::{AudioContext, AudioNode, AudioWorkletNode, console, GainNode, Request, Response, Window};
 
 use crate::log;
 
@@ -39,21 +37,6 @@ impl Master {
         })
     }
 
-    pub fn on_message(
-        &self,
-        callback: Box<dyn FnMut(MessageEvent)>,
-    ) -> Result<(), JsValue> {
-        let cb = Closure::wrap(callback);
-
-        self.master_processor
-            .port()?
-            .set_onmessage(Some(cb.as_ref().unchecked_ref()));
-
-        cb.forget();
-
-        Ok(())
-    }
-
     pub fn post_message(
         &self,
         msg: &JsValue,
@@ -66,7 +49,7 @@ impl Master {
     }
 
     pub async fn play(&self) -> Result<(), JsValue> {
-        console::log_1(&JsValue::from_str("Master play..."));
+        log!("Master play...");
         JsFuture::from(self.audio_context.resume()?).await?;
         Ok(())
     }

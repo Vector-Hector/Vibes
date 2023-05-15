@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::time::Duration;
-use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy)]
 pub struct KeyState {
@@ -15,7 +13,6 @@ pub struct KeyState {
 
 
 pub struct MidiSynthBridge {
-    sample_rate: u32,
     messages: HashMap<u8, KeyState>,
     synth: Box<dyn Synth>,
     volume: f32,
@@ -23,12 +20,9 @@ pub struct MidiSynthBridge {
 
 impl MidiSynthBridge {
     pub fn new(synth: Box<dyn Synth>) -> MidiSynthBridge {
-        let sr = synth.sample_rate();
-
         return MidiSynthBridge {
             messages: HashMap::new(),
             synth,
-            sample_rate: sr,
             volume: 1.0,
         };
     }
@@ -86,38 +80,5 @@ pub trait Synth {
     fn reset(&mut self);
     fn evaluate_message(&mut self, message: KeyState) -> Option<KeyState>;
     fn get_sample(&mut self) -> f32;
-}
-
-pub struct BridgeSourceWrapper {
-    bridge: Arc<Mutex<MidiSynthBridge>>,
-}
-
-impl BridgeSourceWrapper {
-    pub fn new(bridge: Arc<Mutex<MidiSynthBridge>>) -> BridgeSourceWrapper {
-        return BridgeSourceWrapper { bridge };
-    }
-
-    pub fn on_midi(&mut self, pressed: bool, key: u8, velocity: u8) {
-        let mut bridge = self.get_bridge();
-        bridge.on_midi(pressed, key, velocity);
-    }
-
-    fn get_bridge(&self) -> std::sync::MutexGuard<MidiSynthBridge> {
-        return self.bridge.lock().unwrap();
-    }
-}
-
-impl Iterator for BridgeSourceWrapper {
-    type Item = f32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut bridge = self.get_bridge();
-        return Some(bridge.get_sample());
-    }
-}
-
-unsafe impl Send for BridgeSourceWrapper {
-
-
 }
 

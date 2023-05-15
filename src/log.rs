@@ -1,6 +1,3 @@
-
-use web_sys::console;
-
 #[macro_export]
 macro_rules! log {
     () => {

@@ -1,11 +1,3 @@
-use std::array::IntoIter;
-use std::cmp::Ordering;
-use std::fs::File;
-use std::io::BufReader;
-use std::time::Duration;
-
-use crate::waves::{sin_wave, wave_table_from_func};
-
 use super::bridge::{KeyState, Synth};
 
 pub struct WaveTableSynth {
@@ -122,7 +114,7 @@ impl Envelope {
         let release_time = message.time_since_released;
         let velocity = message.velocity as f32 / 127.0;
 
-        let mut value = 0.0;
+        let mut value;
         if time < self.attack {
             let start_volume = message.start_volume / velocity;
             value = start_volume + (1.0 - start_volume) * time / self.attack;
@@ -142,15 +134,4 @@ impl Envelope {
 
         return (value * velocity, true);
     }
-}
-
-
-pub fn get_example_wave_table_synth() -> WaveTableSynth {
-    let wave_table = wave_table_from_func(Box::new(sin_wave), 64);
-
-    let sample_rate = 44100;
-
-    let envelope = Envelope::new(0.3, 0.4, 0.5, 0.5);
-
-    return WaveTableSynth::new(sample_rate, wave_table, envelope);
 }

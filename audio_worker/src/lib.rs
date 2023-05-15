@@ -1,8 +1,6 @@
 use js_sys::Float32Array;
 use wasm_bindgen::prelude::*;
-use std::panic;
 use crate::bridge::MidiSynthBridge;
-use crate::rand::SimpleRng;
 use crate::synth::{Envelope, WaveTableSynth};
 use crate::waves::{lerp_func, sawtooth_wave, sin_wave, square_wave, triangle_wave, wave_table_from_func};
 
@@ -17,15 +15,12 @@ static mut SYNTH: Option<MidiSynthBridge> = None;
 fn create_synth() -> MidiSynthBridge {
 
     // create the wave function
-    let sin = Box::new(sin_wave);
-    let square = Box::new(square_wave);
+    let _sin = Box::new(sin_wave);
+    let _square = Box::new(square_wave);
     let saw = Box::new(sawtooth_wave);
     let tri = Box::new(triangle_wave);
 
     let wave = lerp_func(saw, tri, 0.5);
-
-    // console::log_1(&JsValue::from_str("abc d1"));
-    // log!("abc d");
 
     // create the synth
     let wave_table = wave_table_from_func(wave, 64);

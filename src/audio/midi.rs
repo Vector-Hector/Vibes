@@ -1,12 +1,12 @@
-use std::io::{stdin, stdout, Write};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
-use web_sys::{console, MessageEvent};
-use wasm_bindgen::{JsCast, JsValue};
-use serde_derive::{Deserialize, Serialize};
 
-use midir::{MidiInput, Ignore};
+use midir::{Ignore, MidiInput};
+use serde_derive::{Deserialize, Serialize};
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen::closure::Closure;
+use web_sys::{console};
+
 use crate::log;
 
 pub(crate) fn setup_listener<F>(on_msg: F)
