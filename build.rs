@@ -45,7 +45,7 @@ fn main() {
     }
 
     // Bundle the worker JavaScript files using esbuild
-    let status = Command::new("esbuild.cmd")
+    let status = Command::new(get_esbuild())
         .args(&[
             "--bundle",
             "static/rust_audio_processor.js",
@@ -58,4 +58,12 @@ fn main() {
     if !status.success() {
         panic!("Failed to bundle worker JavaScript files");
     }
+}
+
+fn get_esbuild() -> &'static str {
+    if cfg!(target_os = "windows") {
+        return "esbuild.cmd";
+    }
+
+    return "esbuild";
 }
