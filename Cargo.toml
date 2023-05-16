@@ -30,6 +30,8 @@ features = [
     "ReadableStream",
     "Request",
     "TextDecoder",
+    "CanvasRenderingContext2d",
+    "HtmlCanvasElement",
 ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -50,3 +52,4 @@ serde-wasm-bindgen = "0.5.0"
 
 console_error_panic_hook = "0.1.6"
 futures-util = "0.3.28"
+yew-hooks = "0.2.0"

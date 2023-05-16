@@ -19,17 +19,23 @@ main {
   text-align: center;
 }
 
-.logo {
-  height: 20em;
+.graph-editor {
+  background-color: black;
+  flex-direction: row;
+  display: flex;
+  width: 800px;
+  height: 400px;
 }
 
-.heart:after {
-  content: "❤️";
+.graph-handle {
+  flex: 1;
+  display: flex;
 
-  font-size: 1.75em;
-}
+  .graph-handle-indicator {
+    width: 100%;
+    background-color: red;
 
-h1 + .subtitle {
-  display: block;
-  margin-top: -1em;
+    transform: scaleY(-1);
+
+  }
 }

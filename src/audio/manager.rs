@@ -41,3 +41,9 @@ impl Manager {
     }
 
 }
+
+impl PartialEq for Manager {
+    fn eq(&self, other: &Self) -> bool {
+        return true; // singleton
+    }
+}

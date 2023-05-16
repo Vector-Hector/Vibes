@@ -1,20 +1,38 @@
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use wasm_bindgen::JsValue;
-use web_sys::{console};
+use web_sys::{console, CanvasRenderingContext2d, HtmlCanvasElement, window, HtmlElement};
+use yew::functional::*;
 use yew::prelude::*;
 
 use crate::audio::manager::Manager;
 use crate::{log, waves};
 
+//
+//     return html! {
+//         <main>
+//         <button onclick={switch_wave_table}>{"Switch Wave Table"}</button>
+//         <button onclick={onclick}>{ "Play" }</button>
+//         </main>
+//
+//     }
+// }
+
+struct HandleChangeEvent {
+    i: usize,
+    x: f32,
+}
+
 #[function_component(App)]
 pub fn app() -> Html {
-    let state = use_state(|| None as Option<Manager>);
+    let manager = use_state(|| None as Option<Manager>);
 
     {
-        let state_handle = state.clone();
+        let mgr_handle = manager.clone();
         use_effect(move || {
-            if state_handle.borrow().is_some() {
+            if mgr_handle.borrow().is_some() {
                 return;
             }
 
@@ -27,13 +45,13 @@ pub fn app() -> Html {
                     return;
                 }
                 log!("Setting state...");
-                state_handle.set(Some(mgr.unwrap()));
+                mgr_handle.set(Some(mgr.unwrap()));
             });
         });
     }
 
-    let onclick = {
-        let state_handle = state.clone();
+    let on_play = {
+        let state_handle = manager.clone();
 
         Callback::from(move |_| {
             let state_handle = state_handle.clone();
@@ -48,22 +66,114 @@ pub fn app() -> Html {
         })
     };
 
-    let switch_wave_table = {
-        let state_handle = state.clone();
+    // let switch_wave_table = {
+    //     let state_handle = manager.clone();
+    //
+    //     Callback::from(move |_| {
+    //         let state_handle = state_handle.clone();
+    //
+    //         let wave_table = waves::wave_table_from_func(Box::new(waves::square_wave), 64);
+    //         state_handle.borrow().as_ref().unwrap().set_wave_table(wave_table);
+    //     })
+    // };
 
-        Callback::from(move |_| {
-            let state_handle = state_handle.clone();
+    let wave_table = use_state(|| waves::wave_table_from_func(Box::new(waves::sin_wave), 64));
 
-            let wave_table = waves::wave_table_from_func(Box::new(waves::square_wave), 64);
-            state_handle.borrow().as_ref().unwrap().set_wave_table(wave_table);
+    {
+        let mgr_handle = manager.clone();
+        let wave_table_handle = wave_table.clone();
+
+        use_effect_with_deps(move |(wt, mgr)| {
+            let m = mgr.borrow().as_ref();
+            if m.is_none() {
+                return;
+            }
+            m.unwrap().set_wave_table(wt.iter().map(|x| *x).collect::<Vec<f32>>());
+        }, (wave_table_handle, mgr_handle));
+    }
+
+    let on_handle_change = {
+        let wave_table_handle = wave_table.clone();
+
+        Callback::from(move |event: HandleChangeEvent| {
+            let mut wave_table = &*wave_table_handle;
+            wave_table_handle.set(
+                wave_table
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| {
+                        if i == event.i {
+                            event.x
+                        } else {
+                            *x
+                        }
+                    })
+                    .collect::<Vec<f32>>());
+        })
+    };
+
+    let handles = {
+        let on_change = on_handle_change.clone();
+
+        move |(i, x)| {
+            html! {
+                <Handle x={x} i={i} onchange={on_change.clone()} />
+            }
+        }
+    };
+
+    html! {
+        <main>
+        <div class={"graph-editor"}>
+        {(*wave_table).iter().enumerate().map(handles).collect::<Html>()}
+        </div>
+        <button onclick={on_play}>{ "Play" }</button>
+        </main>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+struct HandleProps {
+    x: f32,
+    i: usize,
+    onchange: Callback<HandleChangeEvent>,
+}
+
+
+#[function_component(Handle)]
+fn handle(props: &HandleProps) -> Html {
+    let max_height = 200.0;
+    let height = (props.x.abs() * max_height).floor();
+    let mut top = max_height;
+    if props.x > 0.0 {
+        top -= height;
+    }
+
+    let bounds = use_node_ref();
+
+    let onclick = {
+        let onchange = props.onchange.clone();
+        let i = props.i;
+        let bounds_ref = bounds.clone();
+
+        Callback::from(move |event: MouseEvent| {
+            let y = event.client_y() as f32;
+
+            let div = bounds_ref.cast::<HtmlElement>().expect("bounds did not attach");
+            let y_offset = div.offset_top() as f32;
+
+            let new_val = 1.0 - (y - y_offset) / max_height;
+            log!("new_val: {}", new_val);
+
+            onchange.emit(HandleChangeEvent { i, x: new_val });
         })
     };
 
     return html! {
-        <main>
-        <button onclick={switch_wave_table}>{"Switch Wave Table"}</button>
-        <button onclick={onclick}>{ "Play" }</button>
-        </main>
-
-    }
+        <div class={"graph-handle"} onclick={onclick} ref={bounds}>
+        <div class={"graph-handle-indicator"} style={format!("height: {}px; margin-top: {}px", height, top)}>
+        </div>
+        </div>
+    };
 }
+
