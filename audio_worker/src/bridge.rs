@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::collections::HashMap;
 
 #[derive(Clone, Copy)]
@@ -29,6 +30,10 @@ impl MidiSynthBridge {
 
     pub fn set_volume(&mut self, volume: f32) {
         self.volume = volume;
+    }
+
+    pub fn get_synth(&mut self) -> &mut Box<dyn Synth> {
+        return &mut self.synth;
     }
 
     pub fn on_midi(&mut self, pressed: bool, key: u8, velocity: u8) {
@@ -75,10 +80,12 @@ impl MidiSynthBridge {
     }
 }
 
-pub trait Synth {
+pub trait Synth: Any {
     fn sample_rate(&self) -> u32;
     fn reset(&mut self);
     fn evaluate_message(&mut self, message: KeyState) -> Option<KeyState>;
     fn get_sample(&mut self) -> f32;
+
+    fn set_wave_table(&mut self, wave_table: Vec<f32>);
 }
 

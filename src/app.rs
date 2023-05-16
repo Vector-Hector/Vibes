@@ -5,7 +5,7 @@ use web_sys::{console};
 use yew::prelude::*;
 
 use crate::audio::manager::Manager;
-use crate::log;
+use crate::{log, waves};
 
 #[function_component(App)]
 pub fn app() -> Html {
@@ -48,8 +48,20 @@ pub fn app() -> Html {
         })
     };
 
+    let switch_wave_table = {
+        let state_handle = state.clone();
+
+        Callback::from(move |_| {
+            let state_handle = state_handle.clone();
+
+            let wave_table = waves::wave_table_from_func(Box::new(waves::square_wave), 64);
+            state_handle.borrow().as_ref().unwrap().set_wave_table(wave_table);
+        })
+    };
+
     return html! {
         <main>
+        <button onclick={switch_wave_table}>{"Switch Wave Table"}</button>
         <button onclick={onclick}>{ "Play" }</button>
         </main>
 

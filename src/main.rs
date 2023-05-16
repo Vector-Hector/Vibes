@@ -1,6 +1,7 @@
 mod app;
 mod log;
 mod audio;
+mod waves;
 
 use app::App;
 

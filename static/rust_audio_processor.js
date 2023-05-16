@@ -21,6 +21,12 @@ class MasterProcessor extends AudioWorkletProcessor {
                 worker.initSync(module);
                 console.log("initialized wasm module")
                 break;
+            case "waveTable":
+                const waveTable = event.data.value;
+                console.log("wave table:", waveTable);
+                worker.set_wave_table(waveTable);
+                console.log("set wave table")
+                break;
         }
     }
 

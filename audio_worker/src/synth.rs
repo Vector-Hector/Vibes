@@ -1,3 +1,4 @@
+use crate::log;
 use super::bridge::{KeyState, Synth};
 
 pub struct WaveTableSynth {
@@ -89,6 +90,11 @@ impl Synth for WaveTableSynth {
 
     fn get_sample(&mut self) -> f32 {
         return self.current_value;
+    }
+
+    fn set_wave_table(&mut self, wave_table: Vec<f32>) {
+        log!("Setting wave table");
+        self.wave_table = wave_table;
     }
 }
 

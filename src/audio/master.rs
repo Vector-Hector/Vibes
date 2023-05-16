@@ -53,6 +53,12 @@ impl Master {
         JsFuture::from(self.audio_context.resume()?).await?;
         Ok(())
     }
+
+    pub fn set_wave_table(&self, wave_table: Vec<f32>) {
+        let wave_table_message = create_message("waveTable", serde_wasm_bindgen::to_value(&wave_table).unwrap());
+        log!("Master set_wave_table...");
+        self.post_message(&wave_table_message).unwrap();
+    }
 }
 
 unsafe impl Send for Master {

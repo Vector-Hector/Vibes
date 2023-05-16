@@ -1,6 +1,10 @@
+use std::any::{Any, type_name};
+use std::borrow::{Borrow, BorrowMut};
+use std::mem::discriminant;
+use std::ops::{Deref, DerefMut};
 use js_sys::Float32Array;
 use wasm_bindgen::prelude::*;
-use crate::bridge::MidiSynthBridge;
+use crate::bridge::{MidiSynthBridge, Synth};
 use crate::synth::{Envelope, WaveTableSynth};
 use crate::waves::{lerp_func, sawtooth_wave, sin_wave, square_wave, triangle_wave, wave_table_from_func};
 
@@ -15,12 +19,12 @@ static mut SYNTH: Option<MidiSynthBridge> = None;
 fn create_synth() -> MidiSynthBridge {
 
     // create the wave function
-    let _sin = Box::new(sin_wave);
+    let sin = Box::new(sin_wave);
     let _square = Box::new(square_wave);
-    let saw = Box::new(sawtooth_wave);
-    let tri = Box::new(triangle_wave);
+    let _saw = Box::new(sawtooth_wave);
+    let _tri = Box::new(triangle_wave);
 
-    let wave = lerp_func(saw, tri, 0.5);
+    let wave = sin; // lerp_func(sin, sin, 0.5);
 
     // create the synth
     let wave_table = wave_table_from_func(wave, 64);
@@ -71,4 +75,22 @@ pub fn on_midi(is_active: bool, key: u8, velocity: u8) {
     let synth = get_synth();
 
     synth.on_midi(is_active, key, velocity);
+}
+
+trait AsAny {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: Any> AsAny for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+#[wasm_bindgen]
+pub fn set_wave_table(wave_table: Float32Array) {
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+    let synth = get_synth().get_synth();
+    synth.set_wave_table(Float32Array::to_vec(&wave_table));
 }

@@ -35,4 +35,9 @@ impl Manager {
         master.play().await
     }
 
+    pub fn set_wave_table(&self, wave_table: Vec<f32>) {
+        let master = self.master.lock().unwrap();
+        master.set_wave_table(wave_table);
+    }
+
 }
