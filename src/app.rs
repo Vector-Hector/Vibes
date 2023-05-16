@@ -112,18 +112,37 @@ pub fn app() -> Html {
         })
     };
 
+    let mouse_down = use_state(|| false);
+
+    let onmousedown = {
+        let mouse_down_ref = mouse_down.clone();
+
+        Callback::from(move |_| {
+            mouse_down_ref.set(true);
+        })
+    };
+
+    let onmouseup = {
+        let mouse_down_ref = mouse_down.clone();
+
+        Callback::from(move |_| {
+            mouse_down_ref.set(false);
+        })
+    };
+
     let handles = {
         let on_change = on_handle_change.clone();
+        let mouse_down_ref = mouse_down.clone();
 
         move |(i, x)| {
             html! {
-                <Handle x={x} i={i} onchange={on_change.clone()} />
+                <Handle x={x} i={i} onchange={on_change.clone()} mouse_down={*mouse_down_ref} />
             }
         }
     };
 
     html! {
-        <main>
+        <main onmousedown={onmousedown} onmouseup={onmouseup}>
         <div class={"graph-editor"}>
         {(*wave_table).iter().enumerate().map(handles).collect::<Html>()}
         </div>
@@ -136,6 +155,7 @@ pub fn app() -> Html {
 struct HandleProps {
     x: f32,
     i: usize,
+    mouse_down: bool,
     onchange: Callback<HandleChangeEvent>,
 }
 
@@ -151,12 +171,19 @@ fn handle(props: &HandleProps) -> Html {
 
     let bounds = use_node_ref();
 
-    let onclick = {
+    let onmove = {
         let onchange = props.onchange.clone();
         let i = props.i;
         let bounds_ref = bounds.clone();
+        let mouse_down = props.mouse_down;
 
         Callback::from(move |event: MouseEvent| {
+            if !mouse_down {
+                return;
+            }
+
+            log!("mouse move: {}", event.client_y());
+
             let y = event.client_y() as f32;
 
             let div = bounds_ref.cast::<HtmlElement>().expect("bounds did not attach");
@@ -170,7 +197,7 @@ fn handle(props: &HandleProps) -> Html {
     };
 
     return html! {
-        <div class={"graph-handle"} onclick={onclick} ref={bounds}>
+        <div class={"graph-handle"} onmousemove={onmove} ref={bounds}>
         <div class={"graph-handle-indicator"} style={format!("height: {}px; margin-top: {}px", height, top)}>
         </div>
         </div>
