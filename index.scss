@@ -46,3 +46,16 @@ main {
 
   }
 }
+
+.sytrus {
+  background-color: black;
+  flex-direction: row;
+  display: flex;
+  height: 400px;
+
+  .graph-handle {
+    padding-right: 10px;
+    width: 20px;
+
+  }
+}
